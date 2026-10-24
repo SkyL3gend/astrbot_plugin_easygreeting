@@ -146,11 +146,17 @@ class EasyGreeting(Star):
         async with asyncio.timeout(settings.timeout):
             provider_id = settings.provider_id
             if not provider_id:
-                provider_id = await self.context.get_current_chat_provider_id(umo=target)
+                provider_id = await self.context.get_current_chat_provider_id(
+                    umo=target
+                )
             if not provider_id:
                 raise RuntimeError("没有可用的聊天模型，请在插件配置中选择模型")
             now = self._now().astimezone(settings.tz)
-            scene = "群聊，请面向群里的大家问候" if session_kind(target) == "group" else "私聊"
+            scene = (
+                "群聊，请面向群里的大家问候"
+                if session_kind(target) == "group"
+                else "私聊"
+            )
             prompt = (
                 f"{greeting.prompt}\n\n"
                 f"本次问候类型：{greeting.label}\n"
@@ -296,7 +302,8 @@ class EasyGreeting(Star):
                     )
                 lines.append(f"{greeting.label}：{detail}")
                 candidates = [
-                    job for job in self._jobs.values()
+                    job
+                    for job in self._jobs.values()
                     if enabled
                     and job["target"] == target
                     and job["kind"] == greeting.kind
@@ -328,4 +335,6 @@ class EasyGreeting(Star):
             await self._send_text(event.unified_msg_origin, text)
         except Exception as exc:
             logger.warning(f"[简单早晚安] 测试失败：{exc}")
-            yield event.plain_result("生成或主动发送失败，请检查聊天模型、平台支持情况和日志。")
+            yield event.plain_result(
+                "生成或主动发送失败，请检查聊天模型、平台支持情况和日志。"
+            )

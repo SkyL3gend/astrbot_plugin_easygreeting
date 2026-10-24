@@ -1,6 +1,6 @@
 # 简单早晚安
 
-`astrbot-plugin-easygreeting` 是一个 AstrBot 插件：每天在早安、晚安各自的时间窗口内，随机选择时间，调用聊天模型生成问候，再发送到白名单中的群聊或私聊。
+`astrbot_plugin_easygreeting` 是一个 AstrBot 插件：每天在早安、晚安各自的时间窗口内，随机选择时间，调用聊天模型生成问候，再发送到白名单中的群聊或私聊。
 
 ## 功能
 
@@ -15,7 +15,7 @@
 
 需要 **Python 3.11+**、AstrBot **4.9.2 或以上的 4.x 版本**，以及支持主动发送消息的平台。
 
-1. 将插件文件夹放入 AstrBot 的 `data/plugins/` 目录，或者在 WebUI 中上传本插件的 ZIP 包。
+1. 在 AstrBot WebUI 的插件市场搜索“简单早晚安”安装；也可以将插件文件夹放入 AstrBot 的 `data/plugins/` 目录，或在 WebUI 中上传本插件的 ZIP 包。
 2. 在 AstrBot 的 Python 环境中安装 `requirements.txt` 中的依赖。默认 `UTC+08:00` 时区使用 Python 标准库；`tzdata` 用于 Windows 等环境的 IANA 时区名称。
 3. 在 WebUI 的插件页重载“简单早晚安”，进入插件配置并选择一个已配置的聊天模型。
 4. 设置早安、晚安时间和随机范围，然后添加要接收问候的会话白名单。

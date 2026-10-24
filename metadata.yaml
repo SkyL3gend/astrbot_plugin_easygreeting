@@ -1,5 +1,6 @@
 name: astrbot_plugin_easygreeting
 display_name: 简单早晚安
+short_desc: 每天在随机时间主动发送一条早安或晚安。
 desc: 在自定义时间窗口内随机生成并发送早晚安问候，支持群聊和私聊独立白名单。
 version: 1.0.0
 author: SkyLegend

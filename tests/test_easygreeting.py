@@ -22,7 +22,9 @@ def defaults():
 
     def values(items):
         return {
-            key: values(field["items"]) if field["type"] == "object" else field["default"]
+            key: values(field["items"])
+            if field["type"] == "object"
+            else field["default"]
             for key, field in items.items()
         }
 
@@ -55,6 +57,7 @@ def command(name):
     def decorate(function):
         function.command_name = name
         return function
+
     return decorate
 
 
@@ -62,6 +65,7 @@ def permission(value):
     def decorate(function):
         function.permission = value
         return function
+
     return decorate
 
 
@@ -89,7 +93,9 @@ def load_plugin():
     package.__path__ = [str(ROOT)]
     modules[package.__name__] = package
     modules[f"{package.__name__}.scheduler"] = scheduler
-    spec = importlib.util.spec_from_file_location(f"{package.__name__}.main", ROOT / "main.py")
+    spec = importlib.util.spec_from_file_location(
+        f"{package.__name__}.main", ROOT / "main.py"
+    )
     module = importlib.util.module_from_spec(spec)
     with patch.dict(sys.modules, modules):
         spec.loader.exec_module(module)
@@ -136,7 +142,9 @@ class ScheduleTests(unittest.TestCase):
         jobs = {}
         scheduler.plan_jobs(settings, jobs, self.now)
         original = copy.deepcopy(jobs)
-        with patch.object(scheduler.RNG, "uniform", side_effect=AssertionError("redraw")):
+        with patch.object(
+            scheduler.RNG, "uniform", side_effect=AssertionError("redraw")
+        ):
             scheduler.plan_jobs(settings, jobs, self.now + timedelta(minutes=5))
         self.assertEqual(jobs, original)
 
@@ -144,17 +152,22 @@ class ScheduleTests(unittest.TestCase):
         self.config["private_whitelist"].append("bot:FriendMessage:bob")
         settings = scheduler.Settings.from_config(self.config)
         jobs = {}
-        with patch.object(scheduler.RNG, "uniform", side_effect=lambda a, b: a + len(jobs)):
+        with patch.object(
+            scheduler.RNG, "uniform", side_effect=lambda a, b: a + len(jobs)
+        ):
             scheduler.plan_jobs(settings, jobs, self.now)
         today_morning = [
-            job["scheduled_at"] for job in jobs.values()
+            job["scheduled_at"]
+            for job in jobs.values()
             if job["day"] == self.now.date().isoformat() and job["kind"] == "morning"
         ]
         self.assertEqual(len(set(today_morning)), 2)
 
     def test_midnight_window_includes_yesterdays_anchor(self):
         self.config["morning"]["enabled"] = False
-        self.config["night"].update(time="23:50", random_before_minutes=0, random_after_minutes=30)
+        self.config["night"].update(
+            time="23:50", random_before_minutes=0, random_after_minutes=30
+        )
         settings = scheduler.Settings.from_config(self.config)
         now = self.now.replace(hour=0, minute=5)
         jobs = {}
@@ -163,7 +176,9 @@ class ScheduleTests(unittest.TestCase):
         self.assertTrue(any(job["day"] == yesterday for job in jobs.values()))
 
     def test_early_anchor_can_start_on_previous_day(self):
-        self.config["night"].update(time="00:10", random_before_minutes=30, random_after_minutes=0)
+        self.config["night"].update(
+            time="00:10", random_before_minutes=30, random_after_minutes=0
+        )
         greeting = scheduler.Settings.from_config(self.config).greetings[1]
         start, _ = greeting.window(self.now.date(), timezone.utc)
         self.assertEqual(datetime.fromtimestamp(start, timezone.utc).day, 23)
@@ -173,16 +188,20 @@ class ScheduleTests(unittest.TestCase):
         now = self.now.replace(hour=8, minute=20)
         jobs = {}
         scheduler.plan_jobs(settings, jobs, now)
-        self.assertTrue(all(job["scheduled_at"] >= now.timestamp() for job in jobs.values()))
+        self.assertTrue(
+            all(job["scheduled_at"] >= now.timestamp() for job in jobs.values())
+        )
 
     def test_expired_windows_are_not_backfilled(self):
         settings = scheduler.Settings.from_config(self.config)
         jobs = {}
         scheduler.plan_jobs(settings, jobs, self.now.replace(hour=12))
-        self.assertFalse(any(
-            job["day"] == self.now.date().isoformat() and job["kind"] == "morning"
-            for job in jobs.values()
-        ))
+        self.assertFalse(
+            any(
+                job["day"] == self.now.date().isoformat() and job["kind"] == "morning"
+                for job in jobs.values()
+            )
+        )
 
     def test_group_switch_does_not_disable_private(self):
         self.config["group_whitelist"] = ["bot:GroupMessage:group"]
@@ -236,13 +255,17 @@ class PluginTests(unittest.IsolatedAsyncioTestCase):
         self.context = types.SimpleNamespace(
             storage={},
             get_current_chat_provider_id=AsyncMock(return_value="session-model"),
-            llm_generate=AsyncMock(return_value=types.SimpleNamespace(completion_text="早安！")),
+            llm_generate=AsyncMock(
+                return_value=types.SimpleNamespace(completion_text="早安！")
+            ),
             send_message=AsyncMock(return_value=True),
         )
         self.plugin = plugin_module.EasyGreeting(self.context, self.config)
         self.now = datetime(2026, 10, 24, 8, 0, 10, tzinfo=timezone.utc)
         self.plugin._now = lambda: self.now
-        self.random_patch = patch.object(scheduler.RNG, "uniform", side_effect=lambda a, b: a)
+        self.random_patch = patch.object(
+            scheduler.RNG, "uniform", side_effect=lambda a, b: a
+        )
         self.random_patch.start()
 
     async def asyncTearDown(self):
@@ -264,9 +287,12 @@ class PluginTests(unittest.IsolatedAsyncioTestCase):
         await self.trigger()
         await self.trigger()
         self.context.send_message.assert_awaited_once()
-        self.context.get_current_chat_provider_id.assert_awaited_once_with(umo=self.target)
+        self.context.get_current_chat_provider_id.assert_awaited_once_with(
+            umo=self.target
+        )
         self.assertEqual(
-            self.context.llm_generate.await_args.kwargs["chat_provider_id"], "session-model"
+            self.context.llm_generate.await_args.kwargs["chat_provider_id"],
+            "session-model",
         )
         target, chain = self.context.send_message.await_args.args
         self.assertEqual((target, chain.text), (self.target, "早安！"))
@@ -352,6 +378,7 @@ class PluginTests(unittest.IsolatedAsyncioTestCase):
         async def delayed(**kwargs):
             self.now += timedelta(minutes=2)
             return types.SimpleNamespace(completion_text="太迟了")
+
         self.context.llm_generate.side_effect = delayed
         await self.trigger()
         self.context.send_message.assert_not_awaited()
@@ -360,6 +387,7 @@ class PluginTests(unittest.IsolatedAsyncioTestCase):
         async def remove(**kwargs):
             self.config["private_whitelist"] = []
             return types.SimpleNamespace(completion_text="不应发送")
+
         self.context.llm_generate.side_effect = remove
         await self.trigger()
         self.context.send_message.assert_not_awaited()
@@ -368,6 +396,7 @@ class PluginTests(unittest.IsolatedAsyncioTestCase):
         async def change(**kwargs):
             self.config["morning"]["time"] = "09:00"
             return types.SimpleNamespace(completion_text="不应发送")
+
         self.context.llm_generate.side_effect = change
         await self.trigger()
         self.context.send_message.assert_not_awaited()
@@ -377,7 +406,9 @@ class PluginTests(unittest.IsolatedAsyncioTestCase):
         await self.trigger()
         await self.trigger()
         self.context.send_message.assert_awaited_once()
-        self.assertTrue(any(job["status"] == "failed" for job in self.plugin._jobs.values()))
+        self.assertTrue(
+            any(job["status"] == "failed" for job in self.plugin._jobs.values())
+        )
 
     async def test_failed_plan_write_prevents_side_effects_then_recovers(self):
         original = self.plugin.put_kv_data
@@ -396,6 +427,7 @@ class PluginTests(unittest.IsolatedAsyncioTestCase):
             if any(job["status"] == "sending" for job in value.values()):
                 raise RuntimeError("disk full")
             await original(key, value)
+
         self.plugin.put_kv_data = fail_reservation
         await self.plugin._tick()
         tasks = list(self.plugin._workers.values())
@@ -421,7 +453,8 @@ class PluginTests(unittest.IsolatedAsyncioTestCase):
 
         today = self.now.date().isoformat()
         job = next(
-            job for job in self.plugin._jobs.values()
+            job
+            for job in self.plugin._jobs.values()
             if job["day"] == today and job["kind"] == "morning"
         )
         self.assertEqual(job["status"], "pending")
@@ -463,6 +496,7 @@ class PluginTests(unittest.IsolatedAsyncioTestCase):
                 three_started.set()
             await release.wait()
             return types.SimpleNamespace(completion_text="早安")
+
         self.context.llm_generate.side_effect = blocking
         await self.plugin._tick()
         await asyncio.wait_for(three_started.wait(), timeout=2)
@@ -477,6 +511,7 @@ class PluginTests(unittest.IsolatedAsyncioTestCase):
         async def blocking(**kwargs):
             started.set()
             await asyncio.Event().wait()
+
         self.context.llm_generate.side_effect = blocking
         await self.plugin._tick()
         await asyncio.wait_for(started.wait(), timeout=2)
@@ -501,7 +536,11 @@ class PluginTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_all_commands_require_astrbot_admin(self):
         for name in (
-            "show_session", "enable_session", "disable_session", "show_status", "test_greeting"
+            "show_session",
+            "enable_session",
+            "disable_session",
+            "show_status",
+            "test_greeting",
         ):
             self.assertEqual(getattr(self.plugin, name).permission, "admin")
 
