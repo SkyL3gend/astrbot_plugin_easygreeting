@@ -1,0 +1,121 @@
+{
+  "enabled": {
+    "description": "启用简单早晚安",
+    "type": "bool",
+    "default": true
+  },
+  "timezone": {
+    "description": "时区",
+    "type": "string",
+    "default": "UTC+08:00",
+    "hint": "默认北京时间。可填写 UTC、UTC+08:00、Asia/Shanghai 等；IANA 时区名称需要安装 requirements.txt 中的 tzdata。"
+  },
+  "provider_id": {
+    "description": "生成问候使用的聊天模型",
+    "type": "string",
+    "default": "",
+    "_special": "select_provider",
+    "hint": "选择 AstrBot 中已配置的聊天模型。留空时使用目标会话当前配置的聊天模型。"
+  },
+  "group_enabled": {
+    "description": "启用群聊问候",
+    "type": "bool",
+    "default": true,
+    "hint": "只向群聊白名单中的会话发送；白名单为空时不发送。"
+  },
+  "group_whitelist": {
+    "description": "群聊白名单",
+    "type": "list",
+    "default": [],
+    "hint": "每项填写完整群聊会话标识，例如 bot_id:GroupMessage:123456。管理员可在目标群发送 /早晚安开启 自动添加，或 /早晚安会话 获取标识。请勿只填写群号。"
+  },
+  "private_enabled": {
+    "description": "启用私聊问候",
+    "type": "bool",
+    "default": true,
+    "hint": "只向私聊白名单中的会话发送；白名单为空时不发送。"
+  },
+  "private_whitelist": {
+    "description": "私聊白名单",
+    "type": "list",
+    "default": [],
+    "hint": "每项填写完整私聊会话标识，例如 bot_id:FriendMessage:123456。管理员可在目标私聊发送 /早晚安开启 自动添加，或 /早晚安会话 获取标识。请勿只填写用户号。"
+  },
+  "morning": {
+    "description": "早安设置",
+    "type": "object",
+    "items": {
+      "enabled": {
+        "description": "启用早安",
+        "type": "bool",
+        "default": true
+      },
+      "time": {
+        "description": "早安基准时间",
+        "type": "string",
+        "default": "08:00",
+        "hint": "24 小时制 HH:MM，如 08:00。使用上方时区。"
+      },
+      "random_before_minutes": {
+        "description": "最多提前的分钟数",
+        "type": "int",
+        "default": 30,
+        "hint": "例如基准 08:00、提前 30、延后 30，随机窗口为 07:30～08:30，包含结束的这一分钟。两项都为 0 时在 08:00 这一分钟触发。",
+        "slider": {"min": 0, "max": 720, "step": 1}
+      },
+      "random_after_minutes": {
+        "description": "最多延后的分钟数",
+        "type": "int",
+        "default": 30,
+        "slider": {"min": 0, "max": 720, "step": 1}
+      },
+      "prompt": {
+        "description": "发送给模型的早安提示词",
+        "type": "text",
+        "default": "请主动发送一条自然、温暖的早安问候，祝对方今天心情愉快。用中文，控制在1至3句话，可适度使用表情。只输出要发送的问候正文，不要解释任务，不要虚构天气或对方的个人情况。",
+        "hint": "可直接修改语气、长度、人称等；留空则恢复默认提示词。插件会额外提供当前时间和群聊/私聊场景。"
+      }
+    }
+  },
+  "night": {
+    "description": "晚安设置",
+    "type": "object",
+    "items": {
+      "enabled": {
+        "description": "启用晚安",
+        "type": "bool",
+        "default": true
+      },
+      "time": {
+        "description": "晚安基准时间",
+        "type": "string",
+        "default": "23:00",
+        "hint": "24 小时制 HH:MM，如 23:00；随机窗口可以跨过午夜。"
+      },
+      "random_before_minutes": {
+        "description": "最多提前的分钟数",
+        "type": "int",
+        "default": 30,
+        "slider": {"min": 0, "max": 720, "step": 1}
+      },
+      "random_after_minutes": {
+        "description": "最多延后的分钟数",
+        "type": "int",
+        "default": 30,
+        "slider": {"min": 0, "max": 720, "step": 1}
+      },
+      "prompt": {
+        "description": "发送给模型的晚安提示词",
+        "type": "text",
+        "default": "请主动发送一条自然、温柔的晚安问候，提醒对方放松、好好休息。用中文，控制在1至3句话，可适度使用表情。只输出要发送的问候正文，不要解释任务，不要虚构天气或对方的个人情况。",
+        "hint": "可直接修改语气、长度、人称等；留空则恢复默认提示词。插件会额外提供当前时间和群聊/私聊场景。"
+      }
+    }
+  },
+  "generation_timeout_seconds": {
+    "description": "模型生成超时时间（秒）",
+    "type": "int",
+    "default": 60,
+    "slider": {"min": 5, "max": 300, "step": 5}
+  }
+}
