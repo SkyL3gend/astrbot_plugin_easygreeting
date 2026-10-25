@@ -119,6 +119,38 @@ class ScheduleTests(unittest.TestCase):
         self.assertEqual(settings.greetings[0].prompt, scheduler.DEFAULT_MORNING_PROMPT)
         self.assertEqual(settings.greetings[1].prompt, scheduler.DEFAULT_NIGHT_PROMPT)
 
+    def test_blank_values_use_defaults(self):
+        self.config.update(
+            {
+                "timezone": "",
+                "provider_id": None,
+                "group_whitelist": ["", "  "],
+                "private_whitelist": [None, ""],
+                "generation_timeout_seconds": "",
+                "enabled": "",
+                "morning": {
+                    "time": "",
+                    "random_before_minutes": "",
+                    "random_after_minutes": None,
+                    "prompt": None,
+                    "enabled": "",
+                },
+                "night": None,
+            }
+        )
+        settings = scheduler.Settings.from_config(self.config)
+        self.assertEqual(settings.tz.utcoffset(None), timedelta(hours=8))
+        self.assertEqual(settings.provider_id, "")
+        self.assertEqual(settings.timeout, 60)
+        self.assertEqual(settings.targets, frozenset())
+        self.assertTrue(settings.enabled)
+        self.assertEqual(settings.greetings[0].at.strftime("%H:%M"), "08:00")
+        self.assertEqual(settings.greetings[0].before, 30)
+        self.assertEqual(settings.greetings[0].after, 30)
+        self.assertEqual(settings.greetings[0].prompt, scheduler.DEFAULT_MORNING_PROMPT)
+        self.assertEqual(settings.greetings[1].at.strftime("%H:%M"), "23:00")
+        self.assertEqual(settings.greetings[1].prompt, scheduler.DEFAULT_NIGHT_PROMPT)
+
     def test_random_draws_stay_within_each_window(self):
         settings = scheduler.Settings.from_config(self.config)
         jobs = {}
@@ -309,6 +341,27 @@ class PluginTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_empty_whitelist_makes_no_model_or_send_calls(self):
         self.config["private_whitelist"] = []
+        await self.trigger()
+        self.context.llm_generate.assert_not_awaited()
+        self.context.send_message.assert_not_awaited()
+
+    async def test_blank_config_does_not_raise_or_send(self):
+        self.config.update(
+            {
+                "timezone": "",
+                "provider_id": None,
+                "group_whitelist": [""],
+                "private_whitelist": [""],
+                "generation_timeout_seconds": "",
+                "morning": {
+                    "time": "",
+                    "random_before_minutes": "",
+                    "random_after_minutes": None,
+                    "prompt": None,
+                },
+                "night": {},
+            }
+        )
         await self.trigger()
         self.context.llm_generate.assert_not_awaited()
         self.context.send_message.assert_not_awaited()

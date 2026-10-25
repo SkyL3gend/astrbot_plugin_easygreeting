@@ -8,7 +8,7 @@
     "description": "时区",
     "type": "string",
     "default": "UTC+08:00",
-    "hint": "默认北京时间。可填写 UTC、UTC+08:00、Asia/Shanghai 等；IANA 时区名称需要安装 requirements.txt 中的 tzdata。"
+    "hint": "默认北京时间。可填写 UTC、UTC+08:00、Asia/Shanghai 等；IANA 时区名称需要安装 requirements.txt 中的 tzdata。留空使用 UTC+08:00。"
   },
   "provider_id": {
     "description": "生成问候使用的聊天模型",
@@ -27,7 +27,7 @@
     "description": "群聊白名单",
     "type": "list",
     "default": [],
-    "hint": "每项填写完整群聊会话标识，例如 bot_id:GroupMessage:123456。管理员可在目标群发送 /早晚安开启 自动添加，或 /早晚安会话 获取标识。请勿只填写群号。"
+    "hint": "每项填写完整群聊会话标识，例如 bot_id:GroupMessage:123456。管理员可在目标群发送 /早晚安开启 自动添加，或 /早晚安会话 获取标识。请勿只填写群号；空条目会被忽略。"
   },
   "private_enabled": {
     "description": "启用私聊问候",
@@ -39,7 +39,7 @@
     "description": "私聊白名单",
     "type": "list",
     "default": [],
-    "hint": "每项填写完整私聊会话标识，例如 bot_id:FriendMessage:123456。管理员可在目标私聊发送 /早晚安开启 自动添加，或 /早晚安会话 获取标识。请勿只填写用户号。"
+    "hint": "每项填写完整私聊会话标识，例如 bot_id:FriendMessage:123456。管理员可在目标私聊发送 /早晚安开启 自动添加，或 /早晚安会话 获取标识。请勿只填写用户号；空条目会被忽略。"
   },
   "morning": {
     "description": "早安设置",
@@ -54,7 +54,7 @@
         "description": "早安基准时间",
         "type": "string",
         "default": "08:00",
-        "hint": "24 小时制 HH:MM，如 08:00。使用上方时区。"
+        "hint": "24 小时制 HH:MM，如 08:00。使用上方时区；留空使用 08:00。"
       },
       "random_before_minutes": {
         "description": "最多提前的分钟数",
@@ -90,7 +90,7 @@
         "description": "晚安基准时间",
         "type": "string",
         "default": "23:00",
-        "hint": "24 小时制 HH:MM，如 23:00；随机窗口可以跨过午夜。"
+        "hint": "24 小时制 HH:MM，如 23:00；随机窗口可以跨过午夜。留空使用 23:00。"
       },
       "random_before_minutes": {
         "description": "最多提前的分钟数",
@@ -116,6 +116,7 @@
     "description": "模型生成超时时间（秒）",
     "type": "int",
     "default": 60,
+    "hint": "留空使用 60 秒。",
     "slider": {"min": 5, "max": 300, "step": 5}
   }
 }

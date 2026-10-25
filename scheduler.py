@@ -22,6 +22,28 @@ DEFAULT_NIGHT_PROMPT = (
     "只输出要发送的问候正文，不要解释任务，不要虚构天气或对方的个人情况。"
 )
 RNG = random.SystemRandom()
+DEFAULT_TIMEZONE = "UTC+08:00"
+DEFAULT_MORNING_TIME = "08:00"
+DEFAULT_NIGHT_TIME = "23:00"
+DEFAULT_BEFORE_MINUTES = 30
+DEFAULT_AFTER_MINUTES = 30
+DEFAULT_GENERATION_TIMEOUT = 60
+
+
+def is_blank(value: Any) -> bool:
+    return value is None or (isinstance(value, str) and not value.strip())
+
+
+def read_text(value: Any, default: str) -> str:
+    return default if is_blank(value) else str(value).strip()
+
+
+def read_bool(value: Any, default: bool = True) -> bool:
+    if is_blank(value):
+        return default
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+    return bool(value)
 
 
 def get_timezone(value: str) -> tzinfo:
@@ -54,7 +76,9 @@ def session_kind(umo: str) -> str:
     return kinds[parts[1]]
 
 
-def read_minutes(value: Any, label: str) -> int:
+def read_minutes(value: Any, label: str, default: int = 30) -> int:
+    if is_blank(value):
+        return default
     if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 720:
         raise ValueError(f"{label} 必须是 0 至 720 的整数")
     return value
@@ -72,24 +96,37 @@ class Greeting:
 
     @classmethod
     def from_config(cls, kind: str, config: dict) -> Greeting:
+        if not isinstance(config, dict):
+            config = {}
         morning = kind == "morning"
         label = "早安" if morning else "晚安"
-        value = config.get("time", "08:00" if morning else "23:00")
-        if not isinstance(value, str) or not re.fullmatch(r"\d{2}:\d{2}", value):
-            raise ValueError(f"{label}时间需使用 HH:MM 格式，如 08:00")
+        default_time = DEFAULT_MORNING_TIME if morning else DEFAULT_NIGHT_TIME
+        value = read_text(config.get("time"), default_time)
+        if not re.fullmatch(r"\d{2}:\d{2}", value):
+            raise ValueError(f"{label}时间需使用 HH:MM 格式，如 {default_time}")
         try:
             at = time.fromisoformat(value)
         except ValueError as exc:
             raise ValueError(f"{label}时间无效：{value}") from exc
-        before = read_minutes(config.get("random_before_minutes", 30), label)
-        after = read_minutes(config.get("random_after_minutes", 30), label)
+        before = read_minutes(
+            config.get("random_before_minutes"), label, DEFAULT_BEFORE_MINUTES
+        )
+        after = read_minutes(
+            config.get("random_after_minutes"), label, DEFAULT_AFTER_MINUTES
+        )
         if before + after >= 1440:
             raise ValueError(f"{label}随机窗口必须小于 24 小时")
-        prompt = config.get("prompt", "").strip() or (
-            DEFAULT_MORNING_PROMPT if morning else DEFAULT_NIGHT_PROMPT
-        )
+        prompt_value = config.get("prompt")
+        prompt = prompt_value.strip() if isinstance(prompt_value, str) else ""
+        prompt = prompt or (DEFAULT_MORNING_PROMPT if morning else DEFAULT_NIGHT_PROMPT)
         return cls(
-            kind, label, bool(config.get("enabled", True)), at, before, after, prompt
+            kind,
+            label,
+            read_bool(config.get("enabled"), True),
+            at,
+            before,
+            after,
+            prompt,
         )
 
     def window(self, day: date, tz: tzinfo) -> tuple[float, float]:
@@ -117,37 +154,49 @@ class Settings:
 
     @classmethod
     def from_config(cls, config: dict) -> Settings:
-        timezone_name = str(config.get("timezone", "UTC+08:00")).strip()
+        timezone_name = read_text(config.get("timezone"), DEFAULT_TIMEZONE)
         tz = get_timezone(timezone_name)
         targets = set()
         for kind in ("group", "private"):
-            if not config.get(f"{kind}_enabled", True):
+            if not read_bool(config.get(f"{kind}_enabled"), True):
                 # A disabled list is not used; stale entries should not block
                 # greetings for the other chat types.
                 continue
             values = config.get(f"{kind}_whitelist", [])
+            if is_blank(values):
+                values = []
             if not isinstance(values, list):
                 raise ValueError(f"{kind}_whitelist 必须是列表")
             for value in values:
-                if not isinstance(value, str) or session_kind(value.strip()) != kind:
+                if value is None:
+                    continue
+                if not isinstance(value, str):
+                    raise ValueError(f"{kind}_whitelist 中包含非字符串条目")
+                if not value.strip():
+                    continue
+                if session_kind(value.strip()) != kind:
                     raise ValueError(f"{kind}_whitelist 中包含类型不匹配的会话")
                 targets.add(value.strip())
-        timeout = config.get("generation_timeout_seconds", 60)
+        timeout = config.get("generation_timeout_seconds")
+        if is_blank(timeout):
+            timeout = DEFAULT_GENERATION_TIMEOUT
         if (
             isinstance(timeout, bool)
             or not isinstance(timeout, int)
             or not 5 <= timeout <= 300
         ):
             raise ValueError("模型超时时间必须是 5 至 300 的整数秒")
+        provider_value = config.get("provider_id")
+        provider_id = provider_value.strip() if isinstance(provider_value, str) else ""
         return cls(
-            bool(config.get("enabled", True)),
+            read_bool(config.get("enabled"), True),
             timezone_name,
             tz,
-            str(config.get("provider_id", "")).strip(),
+            provider_id,
             timeout,
             frozenset(targets),
             tuple(
-                Greeting.from_config(kind, config.get(kind, {}))
+                Greeting.from_config(kind, config.get(kind) or {})
                 for kind in ("morning", "night")
             ),
         )

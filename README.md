@@ -78,6 +78,7 @@
 ## 重启与异常处理
 
 - 计划和发送状态保存在 AstrBot 的插件 KV 存储中，不放在插件代码目录。
+- 时间、时区、随机范围、提示词、超时等配置留空时会使用默认值；白名单中的空条目会被忽略，不会因此报错。
 - 配置有误时插件仍会加载，调度会每 5 秒重试；`/早晚安状态` 会提示错误，修正配置后自动恢复。
 - 关闭群聊或私聊开关时，对应白名单中的旧条目不会影响另一类会话。
 - 发送占位写入失败时不会误发；存储恢复后会在下一次调度中重试。
@@ -100,7 +101,7 @@ python -m unittest discover -s tests -v
 
 ## 许可证
 
-MIT License，详见 `LICENSE`。
+MIT License，详见 `LICENSE`。更新记录见 `CHANGELOG.md`。
 
 开发接口参考：[插件开发](https://docs.astrbot.app/dev/star/plugin-new.html)、[主动发送](https://docs.astrbot.app/dev/star/guides/send-message.html)、[模型调用](https://docs.astrbot.app/dev/star/guides/ai.html)、[插件存储](https://docs.astrbot.app/dev/star/guides/storage.html)。
 

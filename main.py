@@ -29,6 +29,7 @@ class EasyGreeting(Star):
         self._state_lock = asyncio.Lock()
         self._generation_slots = asyncio.Semaphore(3)
         self._last_config_error = ""
+        self._no_targets_logged = False
 
     async def initialize(self):
         """Restore draws and start on initial load as well as plugin reload."""
@@ -78,6 +79,11 @@ class EasyGreeting(Star):
                 self._last_config_error = ""
             except asyncio.CancelledError:
                 raise
+            except ValueError as exc:
+                message = f"配置有误：{exc}"
+                if message != self._last_config_error:
+                    logger.warning(f"[简单早晚安] {message}")
+                    self._last_config_error = message
             except Exception as exc:
                 message = str(exc)
                 if message != self._last_config_error:
@@ -94,6 +100,14 @@ class EasyGreeting(Star):
             await self._persist()
         if not settings.enabled:
             return
+        if not settings.targets:
+            if not self._no_targets_logged:
+                logger.info(
+                    "[简单早晚安] 当前没有可发送的会话：白名单为空或对应开关关闭"
+                )
+                self._no_targets_logged = True
+            return
+        self._no_targets_logged = False
         enabled_kinds = {g.kind for g in settings.greetings if g.enabled}
         timestamp = now.timestamp()
         for key, job in self._jobs.items():
@@ -114,7 +128,14 @@ class EasyGreeting(Star):
 
     def _worker_done(self, key: str, task: asyncio.Task):
         self._workers.pop(key, None)
-        if not task.cancelled() and (error := task.exception()) is not None:
+        if task.cancelled():
+            return
+        error = task.exception()
+        if error is None:
+            return
+        if isinstance(error, ValueError):
+            logger.warning(f"[简单早晚安] 任务配置有误：{error}")
+        else:
             logger.error(f"[简单早晚安] 任务执行失败：{error}")
 
     def _allowed_greeting(
